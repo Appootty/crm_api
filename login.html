@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in - Management Portal</title>
+<style>
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;font:15px/1.5 "Segoe UI",system-ui,sans-serif;color:#1d2340;background:linear-gradient(135deg,#1d2340 0%,#3b3f8f 55%,#8b5cf6 100%);display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:#fff;border-radius:16px;padding:34px 34px 26px;width:100%;max-width:400px;box-shadow:0 20px 50px rgba(10,15,50,.35)}
+  .brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+  .logo{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#4f6df5,#8b5cf6);color:#fff;font-weight:700;font-size:20px;display:flex;align-items:center;justify-content:center}
+  .brand h1{margin:0;font-size:19px} .brand small{color:#6b7394}
+  label{display:block;font-size:13px;font-weight:600;margin:14px 0 5px}
+  input{width:100%;padding:11px 12px;border:1px solid #d9deee;border-radius:9px;font:inherit;color:inherit}
+  input:focus{outline:2px solid #8b5cf6;border-color:transparent}
+  .pw{position:relative}.pw button{position:absolute;right:6px;top:5px;border:0;background:none;color:#6b7394;cursor:pointer;font:inherit;font-size:13px;padding:6px 8px}
+  .go{width:100%;margin-top:20px;padding:12px;border:0;border-radius:9px;background:linear-gradient(120deg,#4f6df5,#8b5cf6);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+  .go:disabled{opacity:.6;cursor:wait}
+  .err{background:#fde4ea;color:#c2264f;border-radius:8px;padding:9px 12px;font-size:13px;margin-top:14px;display:none}
+  .foot{margin-top:18px;font-size:12px;color:#6b7394;text-align:center}
+</style>
+</head>
+<body>
+<form class="card" id="f" autocomplete="on">
+  <div class="brand"><div class="logo">M</div><div><h1>Management Portal</h1><small>Sales, cash and operations</small></div></div>
+  <label for="u">Username</label>
+  <input id="u" name="username" autocomplete="username" autofocus required>
+  <label for="p">Password</label>
+  <div class="pw"><input id="p" name="password" type="password" autocomplete="current-password" required>
+    <button type="button" id="show" aria-label="Show or hide password">Show</button></div>
+  <div class="err" id="err" role="alert"></div>
+  <button class="go" id="go" type="submit">Sign in</button>
+  <div class="foot">Authorised management users only. Activity may be logged.</div>
+</form>
+<script>
+const $=id=>document.getElementById(id);
+$("show").onclick=()=>{const p=$("p");p.type=p.type==="password"?"text":"password";$("show").textContent=p.type==="password"?"Show":"Hide"};
+function nextUrl(){const n=new URLSearchParams(location.search).get("next");return n&&n.startsWith("/")&&!n.startsWith("//")&&!n.startsWith("/login")?n:"/portal"}
+$("f").onsubmit=async e=>{
+  e.preventDefault();$("err").style.display="none";$("go").disabled=true;$("go").textContent="Signing in...";
+  try{
+    const r=await fetch("/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:$("u").value,password:$("p").value})});
+    const d=await r.json().catch(()=>({}));
+    if(r.ok){location.href=nextUrl();return}
+    $("err").textContent=d.detail||"Could not sign in.";$("err").style.display="block";$("p").value="";$("p").focus();
+  }catch(x){$("err").textContent="Cannot reach the server.";$("err").style.display="block"}
+  $("go").disabled=false;$("go").textContent="Sign in";
+};
+</script>
+</body>
+</html>

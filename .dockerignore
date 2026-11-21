@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+portal_users.json
+.portal_secret
+*.db
+*.db-journal
+*.zip
+crm_dashboard.py
+dashboard.html
+insights.html

@@ -1,0 +1,16 @@
+{
+  "users": [
+    {
+      "username": "admin",
+      "name": "Management Admin",
+      "role": "management",
+      "password": "pbkdf2$200000$b7887abc07aadbce68299c11cc5e4d20$66379e2e5c03d3f09a0f6b8e091f1a38c29b90b6f48118345b43e2f41109e09a"
+    },
+    {
+      "username": "Jacob",
+      "name": "Jacob Abraham",
+      "role": "management",
+      "password": "pbkdf2$200000$edec110f032b764eb1727efa3b417c43$6c07851e6138e80e3c7ec1386c28faa4401c09a690201cec9a13d89995b1c634"
+    }
+  ]
+}

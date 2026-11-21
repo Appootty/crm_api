@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Management Portal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#f3f5fb;--card:#fff;--ink:#1d2340;--muted:#6b7394;--line:#e6e9f4;--nav:#1d2340;
+    --c1:#4f6df5;--c2:#12b8a6;--c3:#f59e0b;--c4:#ef4f7b;--c5:#8b5cf6;--c6:#22c55e}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Segoe UI",system-ui,sans-serif;display:flex;min-height:100vh}
+  nav{width:220px;background:var(--nav);color:#fff;padding:18px 12px;flex-shrink:0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+  .brand{display:flex;align-items:center;gap:10px;padding:2px 8px 18px}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#4f6df5,#8b5cf6);font-weight:700;display:flex;align-items:center;justify-content:center}
+  .brand b{display:block;font-size:15px}.brand small{opacity:.65;font-size:11px}
+  nav a{display:block;color:#c9cfee;text-decoration:none;padding:10px 12px;border-radius:9px;margin-bottom:3px;font-size:14px}
+  nav a:hover{background:rgba(255,255,255,.08);color:#fff}
+  nav a.on{background:linear-gradient(120deg,#4f6df5,#8b5cf6);color:#fff;font-weight:600}
+  nav a .n{float:right;background:#ef4f7b;color:#fff;border-radius:10px;font-size:11px;padding:0 7px;line-height:18px}
+  .navfoot{margin-top:auto;font-size:11px;opacity:.6;padding:8px}
+  .main{flex:1;min-width:0}
+  .top{background:#fff;border-bottom:1px solid var(--line);padding:14px 26px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+  .top h1{margin:0;font-size:20px;flex:1;min-width:180px}.top small{color:var(--muted)}
+  select{padding:6px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
+  input{padding:6px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
+  .user{display:flex;align-items:center;gap:10px;font-size:13px}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit;color:var(--ink)}
+  .btn:hover{background:var(--bg)}
+  #content{padding:22px 26px;max-width:1400px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+  .kpi{border-radius:14px;padding:16px 18px;color:#fff;box-shadow:0 4px 14px rgba(40,50,100,.12)}
+  .kpi .l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.9}.kpi .v{font-size:28px;font-weight:700;margin-top:4px}.kpi .s{font-size:12px;opacity:.95}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px;margin-bottom:16px}
+  .card{background:var(--card);border-radius:14px;padding:16px 18px;box-shadow:0 2px 10px rgba(40,50,100,.07);min-width:0}
+  .card h2{margin:0 0 12px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .card h2:before{content:"";width:10px;height:10px;border-radius:50%;background:var(--dot,var(--c1))}
+  .chart{position:relative;height:280px}.full{grid-column:1/-1}
+  table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:2px solid var(--line)}
+  td{padding:7px 8px;border-bottom:1px solid var(--line)}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+  .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600}
+  .red,.High{background:#fde4ea;color:#c2264f}.amber,.Medium{background:#fef0d2;color:#a86a00}.green,.Low{background:#dcf6e5;color:#15803d}
+  .err{color:#c2264f;padding:8px}.muted{color:var(--muted)}
+  .attn{display:flex;flex-direction:column;gap:8px}.attn a{color:var(--ink);text-decoration:none;padding:9px 12px;border-radius:9px;background:var(--bg);display:flex;gap:10px;align-items:center}
+  .attn a:hover{background:#e9ecf8}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px;align-items:center}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:18px;padding:5px 14px;cursor:pointer;font:inherit;color:var(--ink)}.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .sec{margin:20px 0 10px;font-size:16px;display:flex;align-items:center;gap:10px}.sec:before{content:"";width:12px;height:12px;border-radius:50%;background:var(--c)}
+  .ins{background:#fff;border-radius:14px;padding:16px 20px;box-shadow:0 2px 10px rgba(40,50,100,.07);margin-bottom:12px;border-left:5px solid var(--c)}
+  .ins h3{margin:0 0 6px;font-size:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-top:8px}
+  .ins p{margin:2px 0 0}.auto{background:var(--bg);border-radius:8px;padding:6px 10px}.impact{margin-left:auto;font-weight:700;font-size:13px}
+  @media(max-width:860px){body{flex-direction:column}nav{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;padding:8px}.brand{padding:4px 8px}nav a{margin:2px}.navfoot{display:none}.grid{grid-template-columns:1fr}#content{padding:14px}}
+  @media print{nav,.top .btn,.top select,.bar{display:none}body{display:block;background:#fff}.top{position:static}.ins,.card{box-shadow:none;border:1px solid var(--line);break-inside:avoid}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="brand"><div class="logo">M</div><div><b>Management Portal</b><small id="dbname">Loading...</small></div></div>
+  <div id="menu"></div>
+  <div class="navfoot" id="navfoot"></div>
+</nav>
+<div class="main">
+  <div class="top">
+    <h1 id="title"></h1>
+    <small id="asof"></small>
+    <label class="muted" id="plabel">Period <select id="period"><option value="30">30 days</option><option value="90">90 days</option><option value="180">6 months</option><option value="365">12 months</option></select></label>
+    <div class="user"><span id="who"></span><button class="btn" id="logout">Sign out</button></div>
+  </div>
+  <div id="content"></div>
+</div>
+<script>
+const P=["#4f6df5","#12b8a6","#f59e0b","#ef4f7b","#8b5cf6","#22c55e","#06b6d4","#f97316","#a855f7","#84cc16","#ec4899","#0ea5e9","#eab308"];
+const $=id=>document.getElementById(id);
+const fmt=n=>Number(n||0).toLocaleString(undefined,{maximumFractionDigits:0});
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+Chart.defaults.font.family='"Segoe UI",system-ui,sans-serif';Chart.defaults.plugins.legend.labels.usePointStyle=true;
+const state={period:30,tab:"overview",insights:null};
+let charts=[];
+const clearCharts=()=>{charts.forEach(c=>c.destroy());charts=[]};
+const get=async u=>{const r=await fetch(u,{headers:{Accept:"application/json"}});
+  if(r.status===401){location.href="/login?next="+encodeURIComponent(location.pathname+location.hash);throw new Error("Signed out")}
+  if(!r.ok)throw new Error(u+" returned "+r.status);return r.json()};
+const mk=(id,type,labels,datasets,opts={})=>{const c=new Chart($(id),{type,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,
+  indexAxis:opts.h?"y":"x",plugins:{legend:{display:datasets.length>1},tooltip:{callbacks:{label:c=>`${c.dataset.label||""}: ${fmt(c.parsed[opts.h?"x":"y"])}${opts.unit||""}`}}},
+  scales:{[opts.h?"x":"y"]:{ticks:{callback:v=>fmt(v)},grid:{color:"#eef0f8"}},[opts.h?"y":"x"]:{grid:{display:false},ticks:{autoSkip:false}}}}});charts.push(c)};
+const bar=(id,l,d,o)=>mk(id,"bar",l,d,o);
+const table=(el,cols,rows)=>{$(el).innerHTML=rows.length?`<table><thead><tr>${cols.map(c=>`<th class="${c.n?"n":""}">${c.t}</th>`).join("")}</tr></thead><tbody>${
+  rows.map(r=>`<tr>${cols.map(c=>`<td class="${c.n?"n":""}">${c.f?c.f(r):esc(r[c.k])}</td>`).join("")}</tr>`).join("")}</tbody></table>`:'<div class="muted">Nothing to show.</div>'};
+const safe=async(id,fn)=>{try{await fn()}catch(e){if(e.message!=="Signed out")$(id)?.insertAdjacentHTML("beforeend",`<div class="err">Could not load: ${esc(e.message)}</div>`)}};
+const card=(title,body,dot,full)=>`<div class="card ${full?"full":""}" style="--dot:${dot||"var(--c1)"}"><h2>${title}</h2>${body}</div>`;
+const cv=id=>`<div class="chart"><canvas id="${id}"></canvas></div>`;
+const days=()=>state.period, plabel=()=>({30:"30 days",90:"90 days",180:"6 months",365:"12 months"}[state.period]);
+
+/* ------------------------------------------------ pages */
+async function pageOverview(el){
+  el.innerHTML=`<section class="kpis" id="kpis"></section><section class="grid">
+   ${card("Monthly sales (12 months)",cv("cMonthly"),"var(--c1)")}
+   ${card("Orders by status ("+plabel()+")",cv("cStatus"),"var(--c3)")}
+   ${card("Sales by warehouse ("+plabel()+")",cv("cWh"),"var(--c5)")}
+   ${card("Needs attention",'<div class="attn" id="attn"></div>',"var(--c4)")}</section>`;
+  await safe("kpis",async()=>{const [s,p]=await Promise.all([get("/sales-summary?days=7"),get("/pending-work")]);
+    const a=s[0],w=p[0],up=a.change_pct>=0;
+    const k=[["Sales, last 7 days",fmt(a.current_sales),`${up?"▲":"▼"} ${Math.abs(a.change_pct)}% vs previous week`,"#4f6df5,#6f8bff"],
+     ["Orders, last 7 days",fmt(a.current_orders),`previous week: ${fmt(a.previous_orders)}`,"#12b8a6,#3dd6c3"],
+     ["Orders to confirm / new",`${w.orders_to_confirm} / ${w.new_orders}`,`${w.customers_to_confirm} customers to confirm`,"#f59e0b,#fbbf4a"],
+     ["Pending approvals",fmt(w.pending_approvals),`${w.open_returns} returns still open`,"#8b5cf6,#a98bfa"],
+     ["Low-stock items",fmt(w.low_stock_items),"at or below reorder level","#ef4f7b,#ff7a9c"]];
+    $("kpis").innerHTML=k.map(x=>`<div class="kpi" style="background:linear-gradient(135deg,${x[3]})"><div class="l">${x[0]}</div><div class="v">${x[1]}</div><div class="s">${x[2]}</div></div>`).join("")});
+  await safe("cMonthly",async()=>{const d=(await get("/sales-monthly?months=12")).reverse();bar("cMonthly",d.map(x=>x.month),[{label:"Sales",data:d.map(x=>x.sales),backgroundColor:P[0],borderRadius:6}])});
+  await safe("cStatus",async()=>{const d=await get("/order-status?days="+days());bar("cStatus",d.map(x=>x.status),[{label:"Orders",data:d.map(x=>x.orders),backgroundColor:d.map((_,i)=>P[i%P.length]),borderRadius:6}])});
+  await safe("cWh",async()=>{const d=await get("/sales-by-warehouse?days="+days());bar("cWh",d.map(x=>x.warehouse),[{label:"Sales",data:d.map(x=>x.sales),backgroundColor:[P[4],P[6],P[10]],borderRadius:6}])});
+  await safe("attn",async()=>{const d=await loadInsights();const hi=d.insights.filter(x=>x.priority==="High");
+    $("attn").innerHTML=hi.map(x=>`<a href="#insights"><span class="tag High">High</span><span>${esc(x.title)}</span></a>`).join("")||'<div class="muted">Nothing urgent.</div>'});
+}
+async function pageSales(el){
+  el.innerHTML=`<section class="grid">
+   ${card("Revenue and margin by category ("+plabel()+")",cv("cCat"),"var(--c2)")}
+   ${card("Revenue by brand ("+plabel()+")",cv("cBrand"),"var(--c1)")}
+   ${card("Top customers ("+plabel()+")",cv("cTop"),"var(--c6)")}
+   ${card("Sales and collections by salesman ("+plabel()+")",cv("cSales"),"var(--c1)")}
+   ${card("Salesman detail",'<div id="tSales"></div>',"var(--c5)",1)}</section>`;
+  await safe("cCat",async()=>{const d=await get("/sales-by-category?days="+days());bar("cCat",d.map(x=>x.category),[{label:"Revenue",data:d.map(x=>x.revenue),backgroundColor:P[1],borderRadius:4},{label:"Gross margin",data:d.map(x=>x.gross_margin),backgroundColor:P[2],borderRadius:4}],{h:true})});
+  await safe("cBrand",async()=>{const d=await get("/sales-by-brand?days="+days());bar("cBrand",d.map(x=>x.brand),[{label:"Revenue",data:d.map(x=>x.revenue),backgroundColor:P[0],borderRadius:4}],{h:true})});
+  await safe("cTop",async()=>{const d=await get("/top-customers?limit=8&days="+days());bar("cTop",d.map(x=>x.name),[{label:"Sales",data:d.map(x=>x.sales),backgroundColor:P[5],borderRadius:4}],{h:true})});
+  await safe("cSales",async()=>{const d=await get("/salesman-performance?days="+days());
+    bar("cSales",d.map(x=>x.name),[{label:"Sales",data:d.map(x=>x.sales),backgroundColor:P[0],borderRadius:4},{label:"Collected",data:d.map(x=>x.collected),backgroundColor:P[5],borderRadius:4}]);
+    table("tSales",[{t:"Salesman",k:"name"},{t:"Orders",n:1,k:"orders"},{t:"Sales",n:1,f:r=>fmt(r.sales)},{t:"Collected",n:1,f:r=>fmt(r.collected)},{t:"Large price edits",n:1,f:r=>`<span class="tag ${r.price_edits>10?"red":"green"}">${r.price_edits}</span>`}],d)});
+}
+async function pageCash(el){
+  el.innerHTML=`<section class="grid">
+   ${card("Unpaid balance by age",cv("cAging"),"var(--c4)")}
+   ${card("Expenses by category ("+plabel()+")",cv("cExp"),"var(--c3)")}
+   ${card("Largest overdue invoices (30+ days)",'<div id="tOver"></div>',"var(--c4)",1)}
+   ${card("Customers over their credit limit",'<div id="tRisk"></div>',"var(--c4)",1)}</section>`;
+  await safe("cAging",async()=>{const d=await get("/outstanding-aging");const cols=["#22c55e","#f59e0b","#f97316","#ef4f7b","#b91c4a"];
+    bar("cAging",d.map(x=>x.bucket.slice(2)),[{label:"Balance",data:d.map(x=>x.balance),backgroundColor:d.map((_,i)=>cols[i]),borderRadius:6}])});
+  await safe("cExp",async()=>{const d=await get("/expenses?days="+days());bar("cExp",d.map(x=>x.category),[{label:"Total",data:d.map(x=>x.total),backgroundColor:d.map((_,i)=>P[(i+2)%P.length]),borderRadius:6}])});
+  await safe("tOver",async()=>{const d=await get("/outstanding?min_days_overdue=30&limit=15");
+    table("tOver",[{t:"Invoice",k:"invoice_no"},{t:"Customer",k:"customer"},{t:"Class",k:"class_type"},{t:"Contact",f:r=>esc((r.contact_person||"")+" · "+(r.phone||""))},{t:"Due date",k:"due_date"},
+     {t:"Days overdue",n:1,f:r=>`<span class="tag ${r.days_overdue>90?"red":"amber"}">${r.days_overdue}</span>`},{t:"Balance",n:1,f:r=>fmt(r.balance)}],d)});
+  await safe("tRisk",async()=>{const d=await get("/credit-risk?limit=15");
+    table("tRisk",[{t:"Customer",k:"name"},{t:"Class",k:"class_type"},{t:"Max credit",n:1,f:r=>fmt(r.max_credit_amount)},{t:"Outstanding",n:1,f:r=>fmt(r.outstanding)},
+     {t:"Over limit",n:1,f:r=>`<span class="tag red">${fmt(r.over_limit)}</span>`},{t:"Wallet",n:1,f:r=>fmt(r.wallet_balance)}],d)});
+}
+async function pageOps(el){
+  el.innerHTML=`<section class="grid">
+   ${card("Average days to deliver, by driver ("+plabel()+")",cv("cDrv"),"var(--c2)")}
+   ${card("Returned value by brand ("+plabel()+")",cv("cRet"),"var(--c4)")}
+   ${card("Returns by status",'<div id="tRetS"></div>',"var(--c3)")}
+   ${card("Pending approvals (oldest first)",'<div id="tAppr"></div>',"var(--c5)")}
+   ${card("Low stock",'<div id="tLow"></div>',"var(--c3)",1)}</section>`;
+  await safe("cDrv",async()=>{const d=await get("/delivery-performance?days="+days());
+    const c=new Chart($("cDrv"),{type:"bar",data:{labels:d.map(x=>x.driver),datasets:[{label:"Avg days",data:d.map(x=>x.avg_days),backgroundColor:d.map(x=>x.avg_days>2?"#ef4f7b":"#12b8a6"),borderRadius:6}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:"#eef0f8"}},x:{grid:{display:false}}}}});charts.push(c)});
+  await safe("cRet",async()=>{const d=await get("/returns-by-brand?days="+days());bar("cRet",d.map(x=>x.brand),[{label:"Returned value",data:d.map(x=>x.amount),backgroundColor:d.map((x,i)=>i===0?"#ef4f7b":P[3]),borderRadius:4}],{h:true})});
+  await safe("tRetS",async()=>{const d=await get("/returns-by-status");table("tRetS",[{t:"Status",k:"status"},{t:"Returns",n:1,k:"returns"},{t:"Credit amount",n:1,f:r=>fmt(r.credit_amount)}],d)});
+  await safe("tAppr",async()=>{const d=await get("/approvals-pending?limit=12");
+    table("tAppr",[{t:"Type",k:"request_type"},{t:"Customer",f:r=>esc(r.customer||"–")},{t:"By",k:"requested_by"},{t:"Days waiting",n:1,f:r=>`<span class="tag ${r.days_waiting>7?"red":"amber"}">${r.days_waiting}</span>`}],d)});
+  await safe("tLow",async()=>{const d=await get("/low-stock?limit=15");
+    table("tLow",[{t:"Item",k:"item"},{t:"Warehouse",k:"warehouse"},{t:"Supplier",f:r=>esc(r.supplier||"–")},{t:"In stock",n:1,f:r=>`<span class="tag ${r.quantity<=r.reorder_level/2?"red":"amber"}">${r.quantity}</span>`},{t:"Reorder level",n:1,k:"reorder_level"},{t:"Sold, 90 days",n:1,k:"sold_last_90d"}],d)});
+}
+const send=async(method,url,body)=>{const r=await fetch(url,{method,headers:{"Content-Type":"application/json",Accept:"application/json"},body:body?JSON.stringify(body):undefined});
+  if(r.status===401){location.href="/login";throw new Error("Signed out")}
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||("Error "+r.status));return j};
+async function pageUsers(el){
+  el.innerHTML='<div id="uNote" style="min-height:22px;margin-bottom:8px"></div>'+
+    card("Add a user",`<div class="bar" style="margin:0"><input id="nuU" placeholder="Username" autocomplete="off"><input id="nuN" placeholder="Full name" autocomplete="off"><select id="nuR"><option>management</option><option>admin</option></select><input id="nuP" type="password" placeholder="Password (5+ characters)" autocomplete="new-password" style="min-width:220px"><button class="btn" id="nuB">Add user</button></div><div class="muted">Administrators can manage users on this page. Management users see the reports only.</div>`,"var(--c2)",true)+
+    card("Users",'<div id="uList"></div><div class="muted" style="margin-top:10px">Changing a password signs that person out everywhere. Removing a user ends their access straight away.</div>',"var(--c1)",true);
+  const note=(t,bad)=>{$("uNote").innerHTML=t?`<span class="${bad?"err":"muted"}">${esc(t)}</span>`:""};
+  const load=async()=>{const d=await get("/admin/users");
+    table("uList",[{t:"Username",f:r=>`<b>${esc(r.username)}</b>`},{t:"Full name",k:"name"},
+      {t:"Role",f:r=>`<select data-act="role" data-u="${esc(r.username)}">${["management","admin"].map(x=>`<option ${x===r.role?"selected":""}>${x}</option>`).join("")}</select>`},
+      {t:"Password",f:r=>`<span><button class="btn" data-act="pw" data-u="${esc(r.username)}">Set password</button></span>`},
+      {t:"",f:r=>`<button class="btn" data-act="del" data-u="${esc(r.username)}">Remove</button>`}],d.users)};
+  $("uList").onclick=async e=>{const b=e.target.closest("button");if(!b)return;const u=b.dataset.u,act=b.dataset.act;
+    try{
+      if(act==="del"){if(!confirm("Remove user "+u+"?"))return;await send("DELETE","/admin/users/"+encodeURIComponent(u));note("Removed "+u+".");await load()}
+      else if(act==="pw"){const c=b.parentElement;c.innerHTML=`<input type="password" placeholder="New password" autocomplete="new-password" style="width:160px"> <button class="btn" data-act="pwsave" data-u="${esc(u)}">Save</button> <button class="btn" data-act="pwcancel">Cancel</button>`;c.querySelector("input").focus()}
+      else if(act==="pwcancel"){await load()}
+      else if(act==="pwsave"){const p=b.parentElement.querySelector("input").value;await send("POST","/admin/users/"+encodeURIComponent(u)+"/password",{password:p});note("Password changed for "+u+".");await load()}
+    }catch(err){if(err.message!=="Signed out")note(err.message,true)}};
+  $("uList").onchange=async e=>{const s=e.target;if(s.dataset.act!=="role")return;
+    try{await send("POST","/admin/users/"+encodeURIComponent(s.dataset.u)+"/role",{role:s.value});note("Role updated for "+s.dataset.u+".")}
+    catch(err){if(err.message!=="Signed out"){note(err.message,true);await load()}}};
+  $("nuB").onclick=async()=>{try{await send("POST","/admin/users",{username:$("nuU").value.trim(),name:$("nuN").value.trim(),role:$("nuR").value,password:$("nuP").value});
+    ["nuU","nuN","nuP"].forEach(i=>$(i).value="");note("User added.");await load()}catch(err){if(err.message!=="Signed out")note(err.message,true)}};
+  await safe("uList",load);
+}
+const COL={"Profitability":"var(--c1)","Cash flow":"var(--c2)","Wastage":"var(--c3)","Workflow":"var(--c5)"};
+const KIND={profit:"profit",cash:"cash",waste:"wastage",revenue:"revenue",time:"hours a month"};
+let icat="All",iprio="All";
+async function loadInsights(){if(!state.insights)state.insights=await get("/insights");return state.insights}
+async function pageInsights(el){
+  el.innerHTML='<div class="bar" id="ibar"></div><section class="kpis" id="ik"></section><div id="ilist"></div>';
+  await safe("ilist",async()=>{const D=await loadInsights(),I=D.impact;
+    const k=[["Findings",D.insights.length,`${D.insights.filter(x=>x.priority==="High").length} high priority`,"#4f6df5,#6f8bff"],
+      ["Profit leakage (12 months)",fmt(I.profit),"price cuts, below-list prices, thin margins","#12b8a6,#3dd6c3"],
+      ["Cash tied up",fmt(I.cash),"overdue, over-limit, slow stock","#f59e0b,#fbbf4a"],
+      ["Wastage (12 months)",fmt(I.waste),"returned goods","#ef4f7b,#ff7a9c"],
+      ["Revenue stuck or at risk",fmt(I.revenue),"pending orders, lapsed customers","#8b5cf6,#a98bfa"]];
+    $("ik").innerHTML=k.map(x=>`<div class="kpi" style="background:linear-gradient(135deg,${x[3]})"><div class="l">${x[0]}</div><div class="v">${x[1]}</div><div class="s">${x[2]}</div></div>`).join("");
+    const draw=()=>{const rows=D.insights.filter(x=>(icat==="All"||x.category===icat)&&(iprio==="All"||x.priority===iprio));let h="",last="";
+      for(const x of rows){if(x.category!==last){last=x.category;h+=`<div class="sec" style="--c:${COL[x.category]}">${x.category}</div>`}
+        h+=`<div class="ins" style="--c:${COL[x.category]}"><h3>${esc(x.title)} <span class="tag ${x.priority}">${x.priority}</span>${x.impact_kind&&x.impact_value?`<span class="impact">${fmt(x.impact_value)} ${KIND[x.impact_kind]}</span>`:""}</h3>
+        <div class="lbl">What the data shows</div><p>${esc(x.observation)}</p><div class="lbl">Recommendation</div><p>${esc(x.recommendation)}</p>
+        ${x.automation?`<div class="lbl">Can be automated</div><p class="auto">${esc(x.automation)}</p>`:""}</div>`}
+      $("ilist").innerHTML=h||'<div class="muted">No insights match this filter.</div>';
+      const b=(items,cur,fn)=>items.map(i=>`<button class="chip ${i===cur?"on":""}" data-f="${fn}" data-v="${i}">${i}</button>`).join("");
+      $("ibar").innerHTML=b(["All","Profitability","Cash flow","Wastage","Workflow"],icat,"c")+'<span style="width:12px"></span>'+b(["All","High","Medium","Low"],iprio,"p")+
+        '<span style="flex:1"></span><button class="btn" onclick="window.print()">Print</button>';
+      $("ibar").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{c.dataset.f==="c"?icat=c.dataset.v:iprio=c.dataset.v;draw()})};
+    draw()});
+}
+const TABS=[{id:"overview",label:"Overview",title:"Company overview",fn:pageOverview,period:true},
+  {id:"sales",label:"Sales and products",title:"Sales and products",fn:pageSales,period:true},
+  {id:"cash",label:"Cash and credit",title:"Cash flow and credit",fn:pageCash,period:true},
+  {id:"ops",label:"Operations",title:"Operations: delivery, returns, approvals, stock",fn:pageOps,period:true},
+  {id:"insights",label:"Insights and recommendations",title:"Insights and recommendations",fn:pageInsights,period:false},
+  {id:"users",label:"Users",title:"Users and passwords",fn:pageUsers,period:false,admin:true}];
+async function show(){
+  const id=(location.hash||"#overview").slice(1),t=TABS.find(x=>x.id===id)||TABS[0];state.tab=t.id;
+  document.querySelectorAll("#menu a").forEach(a=>a.classList.toggle("on",a.dataset.id===t.id));
+  $("title").textContent=t.title;$("plabel").style.display=t.period?"":"none";document.title=t.title+" - Management Portal";
+  clearCharts();$("content").innerHTML="";window.scrollTo(0,0);await t.fn($("content"));
+}
+$("period").onchange=e=>{state.period=+e.target.value;show()};
+window.addEventListener("hashchange",show);
+$("logout").onclick=async()=>{await fetch("/auth/logout",{method:"POST"});location.href="/login"};
+(async()=>{
+  try{
+    const me=await get("/auth/me");$("who").textContent=me.name;
+    for(let i=TABS.length-1;i>=0;i--)if(TABS[i].admin&&!me.admin)TABS.splice(i,1);
+    $("menu").innerHTML=TABS.map(t=>`<a href="#${t.id}" data-id="${t.id}">${t.label}<span class="n" id="b_${t.id}" style="display:none"></span></a>`).join("");
+    get("/health").then(h=>{$("asof").textContent="Data up to "+h.data_up_to;$("dbname").textContent=h.db});
+    loadInsights().then(d=>{const n=d.insights.filter(x=>x.priority==="High").length;if(n){const b=$("b_insights");b.textContent=n;b.style.display=""}}).catch(()=>{});
+    await show();
+  }catch(e){if(e.message!=="Signed out")$("content").innerHTML='<div class="err">'+esc(e.message)+"</div>"}
+})();
+</script>
+</body>
+</html>

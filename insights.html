@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM Insights and Recommendations</title>
+<style>
+  :root{--bg:#f3f5fb;--card:#fff;--ink:#1d2340;--muted:#6b7394;--line:#e6e9f4;
+    --profit:#4f6df5;--cash:#12b8a6;--waste:#f59e0b;--work:#8b5cf6}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Segoe UI",system-ui,sans-serif}
+  header{background:linear-gradient(120deg,#4f6df5,#8b5cf6 60%,#ef4f7b);color:#fff;padding:22px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+  header h1{margin:0;font-size:22px} header small{opacity:.9} header a{color:#fff;text-decoration:underline;margin-left:14px}
+  main{padding:22px 28px;max-width:1200px;margin:auto}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:12px}
+  .kpi{border-radius:14px;padding:14px 18px;color:#fff;box-shadow:0 4px 14px rgba(40,50,100,.12)}
+  .kpi .l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.92}.kpi .v{font-size:26px;font-weight:700}.kpi .s{font-size:12px;opacity:.95}
+  .note{color:var(--muted);font-size:12px;margin:0 0 16px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 18px;align-items:center}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:18px;padding:5px 14px;cursor:pointer;font:inherit;color:var(--ink)}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .sec{margin:22px 0 10px;font-size:17px;display:flex;align-items:center;gap:10px}
+  .sec:before{content:"";width:12px;height:12px;border-radius:50%;background:var(--c)}
+  .card{background:var(--card);border-radius:14px;padding:16px 20px;box-shadow:0 2px 10px rgba(40,50,100,.07);margin-bottom:12px;border-left:5px solid var(--c)}
+  .card h3{margin:0 0 6px;font-size:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .tag{display:inline-block;padding:1px 9px;border-radius:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .High{background:#fde4ea;color:#c2264f}.Medium{background:#fef0d2;color:#a86a00}.Low{background:#dcf6e5;color:#15803d}
+  .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-top:8px}
+  .card p{margin:2px 0 0}.auto{background:#f3f5fb;border-radius:8px;padding:6px 10px;margin-top:2px}
+  .impact{float:right;font-weight:700;color:var(--ink);font-size:13px}
+  .err{color:#c2264f;padding:12px}
+  @media print{header a,.bar{display:none}body{background:#fff}.card{box-shadow:none;border:1px solid var(--line);break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Insights and recommendations</h1><small id="asof">Loading...</small></div>
+  <div><small>Computed from the data with fixed queries</small><a href="/dashboard">Back to dashboard</a><a href="#" onclick="window.print();return false">Print</a></div>
+</header>
+<main>
+  <section class="kpis" id="kpis"></section>
+  <p class="note" id="note"></p>
+  <div class="bar" id="bar"></div>
+  <div id="list"></div>
+</main>
+<script>
+const COL={"Profitability":"var(--profit)","Cash flow":"var(--cash)","Wastage":"var(--waste)","Workflow":"var(--work)"};
+const KIND={profit:"profit",cash:"cash",waste:"wastage",revenue:"revenue",time:"hours a month"};
+const fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:0});
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+let DATA=null,cat="All",prio="All";
+function impactText(x){return x.impact_kind&&x.impact_value?`<span class="impact">${fmt(x.impact_value)} ${KIND[x.impact_kind]}</span>`:""}
+function render(){
+  const rows=DATA.insights.filter(x=>(cat==="All"||x.category===cat)&&(prio==="All"||x.priority===prio));
+  let html="",last="";
+  for(const x of rows){
+    if(x.category!==last){last=x.category;html+=`<div class="sec" style="--c:${COL[x.category]}">${x.category}</div>`}
+    html+=`<div class="card" style="--c:${COL[x.category]}">
+      <h3>${esc(x.title)} <span class="tag ${x.priority}">${x.priority}</span>${impactText(x)}</h3>
+      <div class="lbl">What the data shows</div><p>${esc(x.observation)}</p>
+      <div class="lbl">Recommendation</div><p>${esc(x.recommendation)}</p>
+      ${x.automation?`<div class="lbl">Can be automated</div><p class="auto">${esc(x.automation)}</p>`:""}</div>`;
+  }
+  document.getElementById("list").innerHTML=html||'<div class="err">No insights match this filter.</div>';
+  const mk=(items,cur,set)=>items.map(i=>`<button class="chip ${i===cur?"on":""}" onclick="${set}('${i}')">${i}</button>`).join("");
+  document.getElementById("bar").innerHTML=mk(["All","Profitability","Cash flow","Wastage","Workflow"],cat,"setCat")+
+    '<span style="width:14px"></span>'+mk(["All","High","Medium","Low"],prio,"setPrio");
+}
+window.setCat=c=>{cat=c;render()};window.setPrio=p=>{prio=p;render()};
+(async()=>{
+  try{
+    const r=await fetch("/insights");if(!r.ok)throw new Error("/insights returned "+r.status);
+    DATA=await r.json();
+    document.getElementById("asof").textContent="Data up to "+DATA.as_of;
+    const I=DATA.impact,S=DATA.summary,high=Object.values(S).reduce((a,b)=>a+b.high,0),total=DATA.insights.length;
+    const k=[["Findings",total,`${high} high priority`,"#4f6df5,#6f8bff"],
+      ["Profit leakage (12 months)",fmt(I.profit||0),"price cuts, below-list prices, thin margins","#12b8a6,#3dd6c3"],
+      ["Cash tied up",fmt(I.cash||0),"overdue invoices, over-limit balances, slow stock","#f59e0b,#fbbf4a"],
+      ["Wastage (12 months)",fmt(I.waste||0),"returned goods","#ef4f7b,#ff7a9c"],
+      ["Revenue stuck or at risk",fmt(I.revenue||0),"pending orders, customers who stopped ordering","#8b5cf6,#a98bfa"]];
+    document.getElementById("kpis").innerHTML=k.map(x=>`<div class="kpi" style="background:linear-gradient(135deg,${x[3]})"><div class="l">${x[0]}</div><div class="v">${x[1]}</div><div class="s">${x[2]}</div></div>`).join("");
+    document.getElementById("note").textContent="Amounts are indicative and in the data's own currency units. Some findings overlap, so do not add the tiles together.";
+    render();
+  }catch(e){document.getElementById("list").innerHTML='<div class="err">Could not load insights: '+esc(e.message)+'</div>'}
+})();
+</script>
+</body>
+</html>

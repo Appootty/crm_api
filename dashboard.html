@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f3f5fb; --card:#fff; --ink:#1d2340; --muted:#6b7394; --line:#e6e9f4;
+    --c1:#4f6df5; --c2:#12b8a6; --c3:#f59e0b; --c4:#ef4f7b; --c5:#8b5cf6; --c6:#22c55e;
+  }
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Segoe UI",system-ui,sans-serif}
+  header{background:linear-gradient(120deg,#4f6df5,#8b5cf6 60%,#ef4f7b);color:#fff;padding:22px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+  header h1{margin:0;font-size:22px} header small{opacity:.9}
+  main{padding:22px 28px;max-width:1400px;margin:auto}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+  .kpi{border-radius:14px;padding:16px 18px;color:#fff;box-shadow:0 4px 14px rgba(40,50,100,.12)}
+  .kpi .l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.9}
+  .kpi .v{font-size:28px;font-weight:700;margin-top:4px} .kpi .s{font-size:12px;opacity:.95;margin-top:2px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px}
+  .card{background:var(--card);border-radius:14px;padding:16px 18px;box-shadow:0 2px 10px rgba(40,50,100,.07);min-width:0}
+  .card h2{margin:0 0 12px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .card h2:before{content:"";width:10px;height:10px;border-radius:50%;background:var(--dot,var(--c1))}
+  .chart{position:relative;height:280px}
+  table{width:100%;border-collapse:collapse;font-size:13px} th{text-align:left;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:2px solid var(--line)}
+  td{padding:7px 8px;border-bottom:1px solid var(--line)} td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+  .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600}
+  .red{background:#fde4ea;color:#c2264f}.amber{background:#fef0d2;color:#a86a00}.green{background:#dcf6e5;color:#15803d}
+  .full{grid-column:1/-1} .err{color:#c2264f;padding:8px}
+  @media(max-width:520px){.grid{grid-template-columns:1fr}main{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>CRM Dashboard</h1><small id="asof">Loading…</small></div>
+  <small>Live from your read-only CRM API &nbsp;·&nbsp; <a href="/insights-page" target="_blank" rel="noopener" style="color:#fff;font-weight:700;text-decoration:underline">Insights &amp; recommendations ↗</a></small>
+</header>
+<main>
+  <section class="kpis" id="kpis"></section>
+  <section class="grid">
+    <div class="card" style="--dot:var(--c1)"><h2>Monthly sales</h2><div class="chart"><canvas id="cMonthly"></canvas></div></div>
+    <div class="card" style="--dot:var(--c2)"><h2>Revenue &amp; margin by category (30 days)</h2><div class="chart"><canvas id="cCat"></canvas></div></div>
+    <div class="card" style="--dot:var(--c4)"><h2>Unpaid balance by age</h2><div class="chart"><canvas id="cAging"></canvas></div></div>
+    <div class="card" style="--dot:var(--c3)"><h2>Orders by status (30 days)</h2><div class="chart"><canvas id="cStatus"></canvas></div></div>
+    <div class="card" style="--dot:var(--c5)"><h2>Sales by warehouse (30 days)</h2><div class="chart"><canvas id="cWh"></canvas></div></div>
+    <div class="card" style="--dot:var(--c6)"><h2>Top customers (90 days)</h2><div class="chart"><canvas id="cTop"></canvas></div></div>
+    <div class="card" style="--dot:var(--c1)"><h2>Sales and collections by salesman (30 days)</h2><div class="chart"><canvas id="cSales"></canvas></div></div>
+    <div class="card" style="--dot:var(--c2)"><h2>Average days to deliver, by driver (90 days)</h2><div class="chart"><canvas id="cDrv"></canvas></div></div>
+    <div class="card" style="--dot:var(--c4)"><h2>Returned value by brand (180 days)</h2><div class="chart"><canvas id="cRet"></canvas></div></div>
+    <div class="card" style="--dot:var(--c3)"><h2>Expenses by category (30 days)</h2><div class="chart"><canvas id="cExp"></canvas></div></div>
+    <div class="card full" style="--dot:var(--c4)"><h2>Largest overdue invoices (30+ days)</h2><div id="tOver"></div></div>
+    <div class="card full" style="--dot:var(--c4)"><h2>Customers over their credit limit</h2><div id="tRisk"></div></div>
+    <div class="card full" style="--dot:var(--c5)"><h2>Pending approvals (oldest first)</h2><div id="tAppr"></div></div>
+    <div class="card full" style="--dot:var(--c3)"><h2>Low stock</h2><div id="tLow"></div></div>
+  </section>
+</main>
+<script>
+const P=["#4f6df5","#12b8a6","#f59e0b","#ef4f7b","#8b5cf6","#22c55e","#06b6d4","#f97316","#a855f7","#84cc16","#ec4899","#0ea5e9","#eab308"];
+const fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:0});
+const get=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(u+" → "+r.status);return r.json()};
+Chart.defaults.font.family='"Segoe UI",system-ui,sans-serif';
+Chart.defaults.plugins.legend.labels.usePointStyle=true;
+const bar=(id,labels,datasets,opts={})=>new Chart(document.getElementById(id),{type:"bar",data:{labels,datasets},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:opts.h?"y":"x",
+    plugins:{legend:{display:datasets.length>1},tooltip:{callbacks:{label:c=>`${c.dataset.label||""}: ${fmt(c.parsed[opts.h?"x":"y"])}`}}},
+    scales:{[opts.h?"x":"y"]:{ticks:{callback:v=>fmt(v)},grid:{color:"#eef0f8"}},[opts.h?"y":"x"]:{grid:{display:false},ticks:{autoSkip:false}}}}});
+const table=(el,cols,rows)=>{document.getElementById(el).innerHTML=
+  `<table><thead><tr>${cols.map(c=>`<th class="${c.n?"n":""}">${c.t}</th>`).join("")}</tr></thead><tbody>${
+   rows.map(r=>`<tr>${cols.map(c=>`<td class="${c.n?"n":""}">${c.f?c.f(r):r[c.k]}</td>`).join("")}</tr>`).join("")}</tbody></table>`};
+const safe=async(name,fn)=>{try{await fn()}catch(e){console.error(e);document.getElementById(name)?.insertAdjacentHTML("afterend",`<div class="err">Could not load: ${e.message}</div>`)}};
+
+(async()=>{
+  const health=await get("/health").catch(()=>null);
+  document.getElementById("asof").textContent=health?`Data up to ${health.data_up_to} · ${health.db}`:"API not reachable";
+
+  await safe("kpis",async()=>{
+    const [s,p]=await Promise.all([get("/sales-summary?days=7"),get("/pending-work")]);
+    const a=s[0],w=p[0],up=a.change_pct>=0;
+    const k=[
+      ["Sales, last 7 days",fmt(a.current_sales),`${up?"▲":"▼"} ${Math.abs(a.change_pct)}% vs previous week`,"#4f6df5,#6f8bff"],
+      ["Orders, last 7 days",fmt(a.current_orders),`previous week: ${fmt(a.previous_orders)}`,"#12b8a6,#3dd6c3"],
+      ["Orders to confirm / new",`${w.orders_to_confirm} / ${w.new_orders}`,`${w.customers_to_confirm} customers to confirm`,"#f59e0b,#fbbf4a"],
+      ["Pending approvals",fmt(w.pending_approvals),`${w.open_returns} returns still open`,"#8b5cf6,#a98bfa"],
+      ["Low-stock items",fmt(w.low_stock_items),"at or below reorder level","#ef4f7b,#ff7a9c"]];
+    document.getElementById("kpis").innerHTML=k.map(x=>`<div class="kpi" style="background:linear-gradient(135deg,${x[3]})"><div class="l">${x[0]}</div><div class="v">${x[1]}</div><div class="s">${x[2]}</div></div>`).join("");
+  });
+
+  await safe("cMonthly",async()=>{const d=(await get("/sales-monthly?months=12")).reverse();
+    bar("cMonthly",d.map(x=>x.month),[{label:"Sales",data:d.map(x=>x.sales),backgroundColor:P[0],borderRadius:6}]);});
+  await safe("cCat",async()=>{const d=await get("/sales-by-category?days=30");
+    bar("cCat",d.map(x=>x.category),[{label:"Revenue",data:d.map(x=>x.revenue),backgroundColor:P[1],borderRadius:4},
+      {label:"Gross margin",data:d.map(x=>x.gross_margin),backgroundColor:P[2],borderRadius:4}],{h:true});});
+  await safe("cAging",async()=>{const d=await get("/outstanding-aging");
+    const cols=["#22c55e","#f59e0b","#f97316","#ef4f7b","#b91c4a"];
+    bar("cAging",d.map(x=>x.bucket.slice(2)),[{label:"Balance",data:d.map(x=>x.balance),backgroundColor:d.map((_,i)=>cols[i]),borderRadius:6}]);});
+  await safe("cStatus",async()=>{const d=await get("/order-status?days=30");
+    bar("cStatus",d.map(x=>x.status),[{label:"Orders",data:d.map(x=>x.orders),backgroundColor:d.map((_,i)=>P[i%P.length]),borderRadius:6}]);});
+  await safe("cWh",async()=>{const d=await get("/sales-by-warehouse?days=30");
+    bar("cWh",d.map(x=>x.warehouse),[{label:"Sales",data:d.map(x=>x.sales),backgroundColor:[P[4],P[6],P[10]],borderRadius:6}]);});
+  await safe("cTop",async()=>{const d=await get("/top-customers?limit=8&days=90");
+    bar("cTop",d.map(x=>x.name),[{label:"Sales",data:d.map(x=>x.sales),backgroundColor:P[5],borderRadius:4}],{h:true});});
+  await safe("cSales",async()=>{const d=await get("/salesman-performance?days=30");
+    bar("cSales",d.map(x=>x.name),[{label:"Sales",data:d.map(x=>x.sales),backgroundColor:P[0],borderRadius:4},
+      {label:"Collected",data:d.map(x=>x.collected),backgroundColor:P[5],borderRadius:4}]);});
+  await safe("cDrv",async()=>{const d=await get("/delivery-performance?days=90");
+    new Chart(document.getElementById("cDrv"),{type:"bar",data:{labels:d.map(x=>x.driver),datasets:[{label:"Avg days",data:d.map(x=>x.avg_days),
+      backgroundColor:d.map(x=>x.avg_days>2?"#ef4f7b":"#12b8a6"),borderRadius:6}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:"#eef0f8"}},x:{grid:{display:false}}}}});});
+  await safe("cRet",async()=>{const d=await get("/returns-by-brand?days=180");
+    bar("cRet",d.map(x=>x.brand),[{label:"Returned value",data:d.map(x=>x.amount),backgroundColor:d.map(x=>x.amount>0&&x===d[0]?"#ef4f7b":P[3]),borderRadius:4}],{h:true});});
+  await safe("cExp",async()=>{const d=await get("/expenses?days=30");
+    bar("cExp",d.map(x=>x.category),[{label:"Total",data:d.map(x=>x.total),backgroundColor:d.map((_,i)=>P[(i+2)%P.length]),borderRadius:6}]);});
+
+  await safe("tOver",async()=>{const d=await get("/outstanding?min_days_overdue=30&limit=10");
+    table("tOver",[{t:"Invoice",k:"invoice_no"},{t:"Customer",k:"customer"},{t:"Class",k:"class_type"},{t:"Contact",f:r=>`${r.contact_person||""} · ${r.phone||""}`},
+      {t:"Due date",k:"due_date"},{t:"Days overdue",n:1,f:r=>`<span class="tag ${r.days_overdue>90?"red":"amber"}">${r.days_overdue}</span>`},{t:"Balance",n:1,f:r=>fmt(r.balance)}],d);});
+  await safe("tRisk",async()=>{const d=await get("/credit-risk?limit=10");
+    table("tRisk",[{t:"Customer",k:"name"},{t:"Class",k:"class_type"},{t:"Max credit",n:1,f:r=>fmt(r.max_credit_amount)},
+      {t:"Outstanding",n:1,f:r=>fmt(r.outstanding)},{t:"Over limit",n:1,f:r=>`<span class="tag red">${fmt(r.over_limit)}</span>`},{t:"Wallet",n:1,f:r=>fmt(r.wallet_balance)}],d);});
+  await safe("tAppr",async()=>{const d=await get("/approvals-pending?limit=15");
+    table("tAppr",[{t:"Type",k:"request_type"},{t:"Customer",f:r=>r.customer||"–"},{t:"Requested by",k:"requested_by"},{t:"Created",k:"created_at"},
+      {t:"Days waiting",n:1,f:r=>`<span class="tag ${r.days_waiting>7?"red":"amber"}">${r.days_waiting}</span>`}],d);});
+  await safe("tLow",async()=>{const d=await get("/low-stock?limit=15");
+    table("tLow",[{t:"Item",k:"item"},{t:"Warehouse",k:"warehouse"},{t:"Supplier",f:r=>r.supplier||"–"},{t:"In stock",n:1,f:r=>`<span class="tag ${r.quantity<=r.reorder_level/2?"red":"amber"}">${r.quantity}</span>`},
+      {t:"Reorder level",n:1,k:"reorder_level"},{t:"Sold, 90 days",n:1,k:"sold_last_90d"}],d);});
+})();
+</script>
+</body>
+</html>
